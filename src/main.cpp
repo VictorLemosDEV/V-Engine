@@ -14,6 +14,7 @@
 #include "ModelEntity.hpp"
 
 #include "UIManager.hpp"
+#include "ResourceManager.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -36,6 +37,19 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
+
+std::shared_ptr<Texture> createWhiteTexture() {
+    unsigned int whiteTextureID;
+    glGenTextures(1, &whiteTextureID);
+    glBindTexture(GL_TEXTURE_2D, whiteTextureID);
+    unsigned char whitePixel[] = {255, 255, 255, 255};
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // Assuming your Texture class has a constructor that takes texture ID
+    return std::make_shared<Texture>(whiteTextureID);
+}
 
 
 int main() {
@@ -78,6 +92,7 @@ int main() {
 
     Scene scene;
     UIManager uiManager(window);
+    ResourceManager resourceManager;
 
     // Geometria completa do cubo com posições, normais e coordenadas de textura
     std::vector<Vertex> vertices = {
@@ -117,7 +132,25 @@ int main() {
         8, 9, 10,  10, 11, 8,  12, 13, 14, 14, 15, 12,
         16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20
     };
-    Mesh cubeMesh(vertices, indices);
+
+    // Create shared_ptr for Shader first (don't create stack-allocated ourShader)
+    auto shaderPtr = std::make_shared<Shader>("shaders/basic.vert", "shaders/basic.frag");
+    std::cout << "Shader criado com ID: " << shaderPtr->ID << std::endl;
+
+
+    auto texturePtr = createWhiteTexture();  // We'll make this a function
+
+    // Create mesh
+    auto meshPtr = std::make_shared<Mesh>(vertices, indices);
+
+    // Create entity
+    auto cubeEntity = std::make_shared<ModelEntity>(
+    meshPtr,
+    texturePtr,  // Texture comes before Shader
+    shaderPtr
+);
+    scene.addEntity(cubeEntity);
+
     std::cout << "Mesh criado com " << vertices.size() << " vertices e " << indices.size() << " indices" << std::endl;
     
     Texture cubeTexture("textures/container.jpg");
@@ -155,55 +188,27 @@ while (!glfwWindowShouldClose(window)) {
     uiManager.renderUI(scene);
 
     // --- 3D Rendering ---
-    ourShader.use();
-
     for (auto& entity : scene.entities) {
         if (auto modelEntity = std::dynamic_pointer_cast<ModelEntity>(entity)) {
+            modelEntity->shader->use();
 
-            ourShader.setMat4("model", modelEntity->getTransformMatrix());
-            modelEntity->model->draw(ourShader);
+            alg::Mat4 projection = alg::Mat4::create_perspective(
+                alg::degrees_to_radians(camera.Zoom),
+                (float)SCR_WIDTH / (float)SCR_HEIGHT,
+                0.1f,
+                100.0f
+            );
+            alg::Mat4 view = camera.getViewMatrix();
+
+            modelEntity->shader->setMat4("projection", projection);
+            modelEntity->shader->setMat4("view", view);
+            modelEntity->shader->setMat4("model", modelEntity->getTransformMatrix());
+
+            modelEntity->texture->bind();
+            modelEntity->shader->setInt("ourTexture", 0);
+
+            modelEntity->mesh->draw(*modelEntity->shader);
         }
-    }
-
-    // Set up projection and view matrices
-    alg::Mat4 projection = alg::Mat4::create_perspective(
-        alg::degrees_to_radians(camera.Zoom),
-        (float)SCR_WIDTH / (float)SCR_HEIGHT,
-        0.1f,
-        100.0f
-    );
-    alg::Mat4 view = camera.getViewMatrix();
-    ourShader.setMat4("projection", projection);
-    ourShader.setMat4("view", view);
-
-    // Bind texture
-    cubeTexture.bind();
-    ourShader.setInt("ourTexture", 0);
-
-    // Render cubes
-    alg::Vec3 cubePositions[] = {
-        alg::Vec3(0.0f, 0.0f, -3.0f),
-        alg::Vec3(2.0f, 5.0f, -15.0f),
-        alg::Vec3(-1.5f, -2.2f, -2.5f),
-        alg::Vec3(-3.8f, -2.0f, -12.3f),
-        alg::Vec3(2.4f, -0.4f, -3.5f),
-        alg::Vec3(-1.7f, 3.0f, -7.5f),
-        alg::Vec3(1.3f, -2.0f, -2.5f),
-        alg::Vec3(1.5f, 2.0f, -2.5f),
-        alg::Vec3(1.5f, 0.2f, -1.5f),
-        alg::Vec3(-1.3f, 1.0f, -1.5f)
-    };
-
-    for (int i = 0; i < 10; i++) {
-        alg::Mat4 model = alg::Mat4::create_translation(cubePositions[i]);
-        float angle = 20.0f * i;
-        model = model * alg::Mat4::create_rotation_xyz(alg::Vec3(
-            alg::degrees_to_radians(angle),
-            alg::degrees_to_radians(angle * 0.3f),
-            alg::degrees_to_radians(angle * 0.5f)
-        ));
-        ourShader.setMat4("model", model);
-        cubeMesh.draw(ourShader);
     }
 
     uiManager.endFrame();

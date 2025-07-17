@@ -43,6 +43,11 @@ Texture::Texture(const char* path) {
     stbi_image_free(data);
 }
 
+Texture::Texture(unsigned int existingID)
+    : m_ID(existingID), m_width(1), m_height(1), m_nrChannels(4) {
+    // This constructor takes ownership of an existing OpenGL texture
+}
+
 Texture::~Texture() {
     glDeleteTextures(1, &m_ID);
 }

@@ -7,6 +7,7 @@ class Texture {
 public:
     // Construtor: carrega a imagem e cria o objeto de textura
     Texture(const char* path);
+    Texture(unsigned int existingID);
     // Destrutor
     ~Texture();
 

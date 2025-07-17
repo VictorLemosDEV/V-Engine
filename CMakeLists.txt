@@ -8,6 +8,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/GLFW/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/stb
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/tinyobjloader
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui
 )
 
 # --- AQUI ESTÁ A CORREÇÃO PRINCIPAL ---
@@ -33,6 +34,23 @@ add_executable(Vector_Learn
         src/Camera.cpp
         src/Model.hpp
         src/Model.cpp
+
+        libs/imgui/imconfig.h
+        libs/imgui/imgui.h
+        libs/imgui/imgui_impl_glfw.h
+        libs/imgui/imgui_impl_opengl3.h
+        libs/imgui/imgui_impl_opengl3_loader.h
+        libs/imgui/imstb_rectpack.h
+        libs/imgui/imstb_textedit.h
+        libs/imgui/imstb_truetype.h
+        libs/imgui/imgui_internal.h
+        libs/imgui/imgui.cpp
+        libs/imgui/imgui_draw.cpp
+        libs/imgui/imgui_impl_glfw.cpp
+        libs/imgui/imgui_impl_opengl3.cpp
+        libs/imgui/imgui_tables.cpp
+        libs/imgui/imgui_widgets.cpp
+        libs/imgui/imgui_demo.cpp
 )
 
 # Link libraries

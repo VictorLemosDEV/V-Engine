@@ -11,10 +11,8 @@
 
 #include "Model.hpp"
 
-// --- Configurações da Janela ---
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
-
 // --- Câmera ---
 // Instancia a câmera com uma posição inicial mais afastada
 Camera camera(alg::Vec3(0.0f, 0.0f, 5.0f));

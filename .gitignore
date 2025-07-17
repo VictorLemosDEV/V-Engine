@@ -1,0 +1,13 @@
+# Pasta de build do CMake
+cmake-build-debug/
+cmake-build-release/
+
+# Arquivos do CLion
+.idea/
+
+# Arquivos gerados pelo sistema
+*.exe
+*.dll
+*.so
+*.dylib
+*.bat

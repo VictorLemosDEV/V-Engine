@@ -7,6 +7,7 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/GLAD/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/GLFW/include
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/stb
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/tinyobjloader
 )
 
 # --- AQUI ESTÁ A CORREÇÃO PRINCIPAL ---
@@ -30,6 +31,8 @@ add_executable(Vector_Learn
         src/Texture.cpp
         src/Camera.hpp
         src/Camera.cpp
+        src/Model.hpp
+        src/Model.cpp
 )
 
 # Link libraries
@@ -52,3 +55,4 @@ endif()
 
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY textures DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY models DESTINATION ${CMAKE_BINARY_DIR})

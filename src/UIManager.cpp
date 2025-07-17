@@ -5,8 +5,11 @@
 #include "imgui_impl_opengl3.h"
 #include "glad/glad.h"
 #include <iostream>
+#include <memory>
 
 #include "algebra.hpp"
+#include "ModelEntity.hpp"
+#include "Scene.hpp"
 
 UIManager::UIManager(GLFWwindow *window) {
 
@@ -42,19 +45,19 @@ void UIManager::endFrame() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void UIManager::renderUI() {
+void UIManager::renderUI(Scene& scene) {
     // Main Window Function
 
     ImGui::ShowDemoWindow();
 
     ImGui::Begin("Engine Control");
     ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::Separator();
 
-    static float cor_do_fundo[3] = {0.2f, 0.3f, 0.3f};
-    ImGui::ColorEdit3("Cor de Fundo", cor_do_fundo);
-    glClearColor(cor_do_fundo[0], cor_do_fundo[1], cor_do_fundo[2], 1.0f); // Usa a cor escolhida
+
+
 
     ImGui::End();
+
+    scene.drawSceneUI();
 }
 

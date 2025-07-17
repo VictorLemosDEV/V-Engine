@@ -53,6 +53,11 @@ add_executable(Vector_Learn
         libs/imgui/imgui_demo.cpp
         src/UIManager.hpp
         src/UIManager.cpp
+        src/Entity.hpp
+        src/Entity.cpp
+        src/ModelEntity.hpp
+        src/CameraEntity.hpp
+        src/Scene.hpp
 )
 
 # Link libraries

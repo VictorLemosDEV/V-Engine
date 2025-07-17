@@ -11,6 +11,7 @@
 #include "imgui.h"
 
 #include "Model.hpp"
+#include "ModelEntity.hpp"
 
 #include "UIManager.hpp"
 
@@ -75,6 +76,7 @@ int main() {
     Shader ourShader("shaders/basic.vert", "shaders/basic.frag");
     std::cout << "Shader criado com ID: " << ourShader.ID << std::endl;
 
+    Scene scene;
     UIManager uiManager(window);
 
     // Geometria completa do cubo com posições, normais e coordenadas de textura
@@ -138,6 +140,11 @@ while (!glfwWindowShouldClose(window)) {
     // --- Input Processing ---
     processInput(window);
 
+    if (scene.activeCamera) {
+        scene.activeCamera->updateCamera();
+        camera = scene.activeCamera->camera;
+    }
+
     uiManager.beginFrame();
 
     // --- Clear Screen ---
@@ -145,10 +152,18 @@ while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // --- ImGui Rendering ---
-    uiManager.renderUI();
+    uiManager.renderUI(scene);
 
     // --- 3D Rendering ---
     ourShader.use();
+
+    for (auto& entity : scene.entities) {
+        if (auto modelEntity = std::dynamic_pointer_cast<ModelEntity>(entity)) {
+
+            ourShader.setMat4("model", modelEntity->getTransformMatrix());
+            modelEntity->model->draw(ourShader);
+        }
+    }
 
     // Set up projection and view matrices
     alg::Mat4 projection = alg::Mat4::create_perspective(

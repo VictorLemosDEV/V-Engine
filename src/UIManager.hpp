@@ -1,6 +1,8 @@
 #ifndef UIMANAGER_HPP
 #define UIMANAGER_HPP
 
+#include "Scene.hpp"
+
 struct GLFWwindow;
 
 class UIManager {
@@ -12,7 +14,7 @@ class UIManager {
     void beginFrame();
     void endFrame();
 
-    void renderUI();
+    void renderUI(Scene& scene);
 
 private:
 };

@@ -52,8 +52,6 @@ public:
     // Processa input do scroll do mouse
     void processMouseScroll(float yoffset);
 
-private:
-    // Calcula os vetores Front, Right e Up a partir dos ângulos de Euler
     void updateCameraVectors();
 };
 

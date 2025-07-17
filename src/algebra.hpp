@@ -78,6 +78,12 @@ inline float radians_to_degrees(float radians) noexcept {
  */
 struct Vec2 {
     float x = 0.0f, y = 0.0f;
+
+    bool operator==(const Vec2& other) const {
+        return x == other.x && y == other.y;
+    }
+
+
 };
 
 // =============================================================================
@@ -169,6 +175,10 @@ struct Vec3 {
     }
     Vec3 operator-() const noexcept {
         return Vec3(-x, -y, -z);
+    }
+
+    bool operator==(const Vec3& other) const {
+        return x == other.x && y == other.y && z == other.z;
     }
 
     // --- Vector Operations ---

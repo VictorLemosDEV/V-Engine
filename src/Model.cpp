@@ -53,11 +53,12 @@ void Model::loadModel(const std::string& path) {
                     attrib.texcoords[2 * index.texcoord_index + 1]
                 };
             }
-            
-            // Lógica para criar um buffer de índice para a nossa struct Vertex combinada
-            // (Não é mais necessária com a abordagem abaixo, mas é bom saber que existe)
-            vertices.push_back(vertex);
-            indices.push_back(indices.size());
+
+            if (uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<unsigned int>(vertices.size());
+                vertices.push_back(vertex);
+            }
+            indices.push_back(uniqueVertices[vertex]);
         }
     }
 

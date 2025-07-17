@@ -4,6 +4,7 @@ Uma engine gráfica 3D simples, escrita em C++ e OpenGL como um projeto de apren
 
 ## Demonstração Rápida
 
+![Gif](https://cdn.discordapp.com/attachments/1255911384093298814/1395261792384716830/V-Engine.gif?ex=6879ce4e&is=68787cce&hm=25cea00c39e78e14ebc01f0f51e7d095fcadd6bd65fcb40e51d6826b7f786eb4&)
 
 ## Funcionalidades Atuais ✨
 * Renderização 3D com OpenGL moderno (Core Profile).

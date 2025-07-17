@@ -8,12 +8,11 @@
 #include "Mesh.hpp"
 #include "Texture.hpp"
 #include "Camera.hpp"
+#include "imgui.h"
 
 #include "Model.hpp"
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include "UIManager.hpp"
 
 const unsigned int SCR_WIDTH = 1920;
 const unsigned int SCR_HEIGHT = 1080;
@@ -23,6 +22,7 @@ Camera camera(alg::Vec3(0.0f, 0.0f, 5.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
+bool cameraActive = false;
 
 // --- Timing ---
 // Garante que o movimento seja o mesmo independente do poder do computador
@@ -32,6 +32,7 @@ float lastFrame = 0.0f;
 // --- Protótipos das Funções de Callback e Input ---
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
@@ -56,24 +57,15 @@ int main() {
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
-
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
     // Diz ao GLFW para capturar nosso mouse e esconder o cursor
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Falha ao inicializar GLAD" << std::endl;
         return -1;
     }
 
-    // Setup Dear ImGui context
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    ImGui::StyleColorsDark(); // Define o tema de cores
 
-    // Setup Platform/Renderer backends
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
 
     // Habilita o teste de profundidade para desenhar o 3D corretamente
     glEnable(GL_DEPTH_TEST);
@@ -82,6 +74,8 @@ int main() {
     std::cout << "\n=== INICIALIZANDO OBJETOS DA ENGINE ===" << std::endl;
     Shader ourShader("shaders/basic.vert", "shaders/basic.frag");
     std::cout << "Shader criado com ID: " << ourShader.ID << std::endl;
+
+    UIManager uiManager(window);
 
     // Geometria completa do cubo com posições, normais e coordenadas de textura
     std::vector<Vertex> vertices = {
@@ -134,9 +128,7 @@ int main() {
     int frameCount = 0;
 while (!glfwWindowShouldClose(window)) {
     // --- Start ImGui Frame ---
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+
 
     // --- Timing ---
     float currentFrame = static_cast<float>(glfwGetTime());
@@ -146,9 +138,14 @@ while (!glfwWindowShouldClose(window)) {
     // --- Input Processing ---
     processInput(window);
 
+    uiManager.beginFrame();
+
     // --- Clear Screen ---
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // --- ImGui Rendering ---
+    uiManager.renderUI();
 
     // --- 3D Rendering ---
     ourShader.use();
@@ -194,14 +191,10 @@ while (!glfwWindowShouldClose(window)) {
         cubeMesh.draw(ourShader);
     }
 
-    // --- ImGui Rendering ---
-    ImGui::ShowDemoWindow();
-    ImGui::Render();
+    uiManager.endFrame();
 
-    // Disable depth test for UI rendering
-    glDisable(GL_DEPTH_TEST);
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-    glEnable(GL_DEPTH_TEST);
+
+
 
     // --- Buffer Swap and Events ---
     glfwSwapBuffers(window);
@@ -209,36 +202,24 @@ while (!glfwWindowShouldClose(window)) {
 }
 
     // --- 4. Limpeza ---
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
     glfwTerminate();
     return 0;
 }
 
 // --- Implementação das Funções de Input ---
 void processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.processKeyboard(FORWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.processKeyboard(BACKWARD, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.processKeyboard(LEFT, deltaTime);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.processKeyboard(RIGHT, deltaTime);
-    // Tecla TAB para alternar entre modo UI e modo câmera
-    static bool tabPressed = false;
-    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS && !tabPressed) {
-        tabPressed = true;
-        int currentMode = glfwGetInputMode(window, GLFW_CURSOR);
-        int newMode = (currentMode == GLFW_CURSOR_DISABLED)
-                    ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
-        glfwSetInputMode(window, GLFW_CURSOR, newMode);
-    }
-    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_RELEASE) {
-        tabPressed = false;
+    if (cameraActive) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+            camera.processKeyboard(FORWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+            camera.processKeyboard(BACKWARD, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+            camera.processKeyboard(LEFT, deltaTime);
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+            camera.processKeyboard(RIGHT, deltaTime);
+
     }
 }
 
@@ -247,18 +228,15 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (!cameraActive || io.WantCaptureMouse) {
+        return;
+    }
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
 
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.WantCaptureMouse) {
-        // Quando a UI está ativa, mostra o cursor
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        return;
-    } else {
-        // Quando a UI não está ativa, esconde o cursor para controle da câmera
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    }
+
 
 
     if (firstMouse) {
@@ -272,15 +250,34 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     lastX = xpos;
     lastY = ypos;
 
-    if (!io.WantCaptureMouse) {
-        camera.processMouseMovement(xoffset, yoffset);
+    camera.processMouseMovement(xoffset, yoffset);
+}
+
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.WantCaptureMouse) {
+            return;
+        }
+
+        if (action == GLFW_PRESS) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            cameraActive = true;
+            firstMouse = true;
+        } else if (action == GLFW_RELEASE) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            cameraActive = false;
+        }
     }
 }
 
+
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
     ImGuiIO& io = ImGui::GetIO();
-    if (!io.WantCaptureMouse) {
-        camera.processMouseScroll(static_cast<float>(yoffset));
+    if (io.WantCaptureMouse) {
+       return;
     }
+
+    camera.processMouseScroll(static_cast<float>(yoffset));
 
 }

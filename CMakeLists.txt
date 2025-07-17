@@ -51,6 +51,8 @@ add_executable(Vector_Learn
         libs/imgui/imgui_tables.cpp
         libs/imgui/imgui_widgets.cpp
         libs/imgui/imgui_demo.cpp
+        src/UIManager.hpp
+        src/UIManager.cpp
 )
 
 # Link libraries

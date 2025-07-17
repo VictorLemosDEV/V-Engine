@@ -9,23 +9,21 @@
 #include "Texture.hpp"
 #include "Camera.hpp"
 
-// --- Configurações da Janela ---
+// Screen dimensions
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// --- Câmera ---
-// Instancia a câmera com uma posição inicial mais afastada
+// Camera system
 Camera camera(alg::Vec3(0.0f, 0.0f, 5.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 
-// --- Timing ---
-// Garante que o movimento seja o mesmo independente do poder do computador
+// Frame timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// --- Protótipos das Funções de Callback e Input ---
+// Function prototypes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -33,44 +31,46 @@ void processInput(GLFWwindow *window);
 
 
 int main() {
-    // --- 1. Inicialização ---
+    // Initialize GLFW
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Engine Gráfica - Câmera FPS", NULL, NULL);
+    // Create window
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "3D Graphics Engine - FPS Camera", NULL, NULL);
     if (window == NULL) {
-        std::cerr << "Falha ao criar a janela GLFW" << std::endl;
+        std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
         return -1;
     }
     glfwMakeContextCurrent(window);
 
-    // Registra nossas funções de callback para input
+    // Register callback functions
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-    // Diz ao GLFW para capturar nosso mouse e esconder o cursor
+    // Capture mouse and hide cursor for FPS-style camera
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    // Load OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        std::cerr << "Falha ao inicializar GLAD" << std::endl;
+        std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    // Habilita o teste de profundidade para desenhar o 3D corretamente
+    // Enable depth testing for proper 3D rendering
     glEnable(GL_DEPTH_TEST);
 
-    // --- 2. Criação dos Objetos da Engine ---
-    std::cout << "\n=== INICIALIZANDO OBJETOS DA ENGINE ===" << std::endl;
+    // Initialize rendering resources
+    std::cout << "\n=== INITIALIZING ENGINE OBJECTS ===" << std::endl;
     Shader ourShader("shaders/basic.vert", "shaders/basic.frag");
-    std::cout << "Shader criado com ID: " << ourShader.ID << std::endl;
+    std::cout << "Shader created with ID: " << ourShader.ID << std::endl;
 
-    // Geometria completa do cubo com posições, normais e coordenadas de textura
+    // Cube geometry with positions, normals, and texture coordinates
     std::vector<Vertex> vertices = {
-        // Posição                // Normal(não usada ainda) // TexCoords
+        // Position             // Normal               // TexCoords
         { {-0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {0.0f, 0.0f} },
         { { 0.5f, -0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 0.0f} },
         { { 0.5f,  0.5f, -0.5f}, { 0.0f,  0.0f, -1.0f}, {1.0f, 1.0f} },
@@ -107,42 +107,47 @@ int main() {
         16, 17, 18, 18, 19, 16, 20, 21, 22, 22, 23, 20
     };
     Mesh cubeMesh(vertices, indices);
-    std::cout << "Mesh criado com " << vertices.size() << " vertices e " << indices.size() << " indices" << std::endl;
+    std::cout << "Mesh created with " << vertices.size() << " vertices and " << indices.size() << " indices" << std::endl;
     
     Texture cubeTexture("textures/container.jpg");
-    std::cout << "=== INICIALIZAÇÃO COMPLETA ===\n" << std::endl;
+    std::cout << "=== INITIALIZATION COMPLETE ===\n" << std::endl;
 
-    // --- 3. Loop de Renderização ---
-    std::cout << "Iniciando loop de renderização..." << std::endl;
-    std::cout << "Posição inicial da câmera: (" << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << ")" << std::endl;
+    // Main render loop
+    std::cout << "Starting render loop..." << std::endl;
+    std::cout << "Initial camera position: (" << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << ")" << std::endl;
     std::cout << "Yaw: " << camera.Yaw << ", Pitch: " << camera.Pitch << std::endl;
-    int frameCount = 0;
+    
     while (!glfwWindowShouldClose(window)) {
-        // Lógica de DeltaTime
+        // Calculate delta time for frame-rate independent movement
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Processa Input (teclado)
+        // Process input
         processInput(window);
 
-        // Renderização
+        // Clear screen
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Activate shader
         ourShader.use();
 
-        // Matrizes de Projeção e Visualização vêm da nossa classe Câmera
-        alg::Mat4 projection = alg::Mat4::create_perspective(alg::degrees_to_radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        // Set projection and view matrices
+        alg::Mat4 projection = alg::Mat4::create_perspective(
+            alg::degrees_to_radians(camera.Zoom), 
+            (float)SCR_WIDTH / (float)SCR_HEIGHT, 
+            0.1f, 100.0f
+        );
         alg::Mat4 view = camera.getViewMatrix();
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
-        // Renderizar múltiplos cubos para testar a câmera FPS
+        // Bind texture
         cubeTexture.bind();
         ourShader.setInt("ourTexture", 0);
         
-        // Posições dos cubos
+        // Define cube positions for testing FPS camera
         alg::Vec3 cubePositions[] = {
             alg::Vec3( 0.0f,  0.0f,  -3.0f),
             alg::Vec3( 2.0f,  5.0f, -15.0f),
@@ -156,10 +161,11 @@ int main() {
             alg::Vec3(-1.3f,  1.0f, -1.5f)
         };
         
+        // Render multiple cubes with different transformations
         for (int i = 0; i < 10; i++) {
             alg::Mat4 model = alg::Mat4::create_translation(cubePositions[i]);
             
-            // Rotacionar alguns cubos
+            // Add rotation to some cubes
             float angle = 20.0f * i;
             model = model * alg::Mat4::create_rotation_xyz(alg::Vec3(
                 alg::degrees_to_radians(angle),
@@ -171,16 +177,17 @@ int main() {
             cubeMesh.draw(ourShader);
         }
 
+        // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    // --- 4. Limpeza ---
+    // Cleanup
     glfwTerminate();
     return 0;
 }
 
-// --- Implementação das Funções de Input ---
+// Input processing functions
 void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -209,7 +216,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
     }
 
     float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos; // Inverted: mouse up = look up
+    float yoffset = lastY - ypos; // Inverted for FPS-style controls
     lastX = xpos;
     lastY = ypos;
 

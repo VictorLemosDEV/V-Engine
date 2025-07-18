@@ -24,7 +24,8 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
         std::cerr << "ERRO::SHADER::FRAGMENT_SHADER_NAO_ENCONTRADO: " << fragmentPath << std::endl;
         return;
     }
-    
+
+
     std::stringstream vShaderStream, fShaderStream;
     // Ler o conteúdo dos arquivos para os streams
     vShaderStream << vShaderFile.rdbuf();

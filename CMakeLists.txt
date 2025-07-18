@@ -58,6 +58,8 @@ add_executable(Vector_Learn
         src/ModelEntity.hpp
         src/CameraEntity.hpp
         src/Scene.hpp
+        src/Light.hpp
+        src/Material.hpp
 )
 
 # Link libraries

@@ -5,12 +5,14 @@
 #include <memory>
 #include "Entity.hpp"
 #include "CameraEntity.hpp"
+#include "Light.hpp"
 #include "ModelEntity.hpp"
 
 class Scene {
 public:
     std::vector<std::shared_ptr<Entity>> entities;
     std::vector<std::shared_ptr<CameraEntity>> cameras;
+    std::vector<std::shared_ptr<Light>> lights;
 
     std::shared_ptr<CameraEntity> activeCamera;
     std::shared_ptr<Entity> selectedEntity;
@@ -28,6 +30,21 @@ public:
 
         if (auto camera = std::dynamic_pointer_cast<CameraEntity>(entity)) {
             cameras.push_back(camera);
+        }
+    }
+
+    void addLight(std::shared_ptr<Light> light) {
+        lights.push_back(light);
+        addEntity(light);
+    }
+
+    void setupLightsInShader(Shader& shader) {
+        int MAX_LIGHTS = 8;
+        int lightCount = std::min((int)lights.size(), MAX_LIGHTS);
+        shader.setInt("activeLightCount", lightCount);
+
+        for (int i = 0; i < lightCount; i++) {
+            lights[i]->setupInShader(shader, i);
         }
     }
 

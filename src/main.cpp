@@ -85,10 +85,7 @@ int main() {
     // Habilita o teste de profundidade para desenhar o 3D corretamente
     glEnable(GL_DEPTH_TEST);
 
-    // --- 2. Criação dos Objetos da Engine ---
-    std::cout << "\n=== INICIALIZANDO OBJETOS DA ENGINE ===" << std::endl;
-    Shader ourShader("shaders/basic.vert", "shaders/basic.frag");
-    std::cout << "Shader criado com ID: " << ourShader.ID << std::endl;
+
 
     Scene scene;
     UIManager uiManager(window);
@@ -151,6 +148,18 @@ int main() {
 );
     scene.addEntity(cubeEntity);
 
+    auto sunLight = std::make_shared<Light>("Sun");
+    sunLight->type = Light::Type::DIRECTIONAL;
+    sunLight->setRotation(alg::Vec3(45.0f, -30.0f, 0.0f)); // Ângulos em graus
+    sunLight->color = alg::Vec3(1.0f, 0.95f, 0.9f);
+    sunLight->intensity = 0.8f;
+    scene.addLight(sunLight);
+
+    // --- 2. Criação dos Objetos da Engine ---
+    std::cout << "\n=== INICIALIZANDO OBJETOS DA ENGINE ===" << std::endl;
+    //Shader ourShader("shaders/basic.vert", "shaders/basic.frag");
+    std::cout << "Shader criado \n";
+
     std::cout << "Mesh criado com " << vertices.size() << " vertices e " << indices.size() << " indices" << std::endl;
     
     Texture cubeTexture("textures/container.jpg");
@@ -162,7 +171,6 @@ int main() {
     std::cout << "Yaw: " << camera.Yaw << ", Pitch: " << camera.Pitch << std::endl;
     int frameCount = 0;
 while (!glfwWindowShouldClose(window)) {
-    // --- Start ImGui Frame ---
 
 
     // --- Timing ---
@@ -190,8 +198,13 @@ while (!glfwWindowShouldClose(window)) {
     // --- 3D Rendering ---
     for (auto& entity : scene.entities) {
         if (auto modelEntity = std::dynamic_pointer_cast<ModelEntity>(entity)) {
-            modelEntity->shader->use();
+            // Use o shader do modelEntity
+            Shader& currentShader = *modelEntity->shader;
+            currentShader.use();
 
+
+
+            // Matrizes de transformação
             alg::Mat4 projection = alg::Mat4::create_perspective(
                 alg::degrees_to_radians(camera.Zoom),
                 (float)SCR_WIDTH / (float)SCR_HEIGHT,
@@ -200,14 +213,33 @@ while (!glfwWindowShouldClose(window)) {
             );
             alg::Mat4 view = camera.getViewMatrix();
 
+            modelEntity->shader->use();
+
+            // Configura as matrizes essenciais
             modelEntity->shader->setMat4("projection", projection);
             modelEntity->shader->setMat4("view", view);
             modelEntity->shader->setMat4("model", modelEntity->getTransformMatrix());
 
-            modelEntity->texture->bind();
-            modelEntity->shader->setInt("ourTexture", 0);
+            // Configura o material
+            modelEntity->shader->setVec3("material.ambient", modelEntity->material.ambient);
+            modelEntity->shader->setVec3("material.diffuseColor", modelEntity->material.diffuse);
+            modelEntity->shader->setVec3("material.specular", modelEntity->material.specular);
+            modelEntity->shader->setFloat("material.shininess", modelEntity->material.shininess);
 
-            modelEntity->mesh->draw(*modelEntity->shader);
+            // Configura a view position
+            modelEntity->shader->setVec3("viewPos", camera.Position);
+
+            // Configura a textura
+            modelEntity->shader->setInt("material.diffuse", 0);
+
+            // Configura as luzes
+            scene.setupLightsInShader(*modelEntity->shader);
+
+            // Configura a textura
+            currentShader.setInt("ourTexture", 0);
+
+            // Renderiza
+            modelEntity->mesh->draw(currentShader);
         }
     }
 

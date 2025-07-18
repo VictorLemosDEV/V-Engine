@@ -1,58 +1,66 @@
-// ModelEntity.hpp
-
 #pragma once
-#include <memory>
 #include "Entity.hpp"
 #include "Mesh.hpp"
-#include "Texture.hpp"
+#include "Material.hpp"
 #include "Shader.hpp"
 #include "algebra.hpp"
 
 class ModelEntity : public Entity {
 public:
     std::shared_ptr<Mesh> mesh;
-    std::shared_ptr<Texture> texture;
+    Material material;
     std::shared_ptr<Shader> shader;
-    alg::Vec3 position;
-    alg::Vec3 rotation;
-    alg::Vec3 scale;
 
-    ModelEntity(
-        std::shared_ptr<Mesh> mesh,
-        std::shared_ptr<Texture> texture,
-        std::shared_ptr<Shader> shader,
-        alg::Vec3 position = alg::Vec3(0.0f, 0.0f, 0.0f),
-        alg::Vec3 rotation = alg::Vec3(0.0f, 0.0f, 0.0f),
-        alg::Vec3 scale = alg::Vec3(1.0f, 1.0f, 1.0f)
-    )
-        : mesh(mesh), texture(texture), shader(shader),
-          position(position), rotation(rotation), scale(scale)
-    {}
-
-    alg::Mat4 getTransformMatrix() const {
-        alg::Mat4 model = alg::Mat4::create_translation(position);
-        model = model * alg::Mat4::create_rotation_x(1.0f);
-        model = model * alg::Mat4::create_rotation_y(1.0f);
-        model = model * alg::Mat4::create_rotation_z(1.0f);
-        model = model * alg::Mat4::create_scale(scale);
-        return model;
-    }
-
-    void drawModelUI() {
-        ImGui::Text("Model Properties");
-        // Adicione controles para transformação, textura, etc.
-        ImGui::InputText("Name", &name[0], 256);
-        ImGui::DragFloat3("Position", &position.x, 0.1f);
-        ImGui::DragFloat3("Rotation", &rotation.x, 1.0f);
-        ImGui::DragFloat3("Scale", &scale.x, 0.1f);
+    ModelEntity(std::shared_ptr<Mesh> mesh,
+               std::shared_ptr<Texture> diffuseTexture,
+               std::shared_ptr<Shader> shader,
+               alg::Vec3 position = alg::Vec3(0.0f,0.0f,0.0f),
+               alg::Vec3 rotation = alg::Vec3(0.0f,0.0f,0.0f),
+               alg::Vec3 scale = alg::Vec3(1.0f,1.0f,1.0f))
+       : Entity("ModelEntity"), mesh(mesh), shader(shader) {
+        setPosition(position);
+        setRotation(rotation);
+        setScale(scale);
+        material.setDiffuseTexture(diffuseTexture);
     }
 
 
+
+    // Renderiza o modelo
+    void render(const alg::Mat4& view, const alg::Mat4& projection, const alg::Vec3& viewPos) {
+        shader->use();
+        
+        // Configura transformações
+        shader->setMat4("model", getTransformMatrix());
+        shader->setMat4("view", view);
+        shader->setMat4("projection", projection);
+        shader->setVec3("viewPos", viewPos);
+        
+        // Configura material
+        material.setupInShader(*shader);
+        
+        // Renderiza o mesh
+        mesh->draw(*shader);
+    }
+
+    // Interface de usuário
     void drawUI() override {
-        drawModelUI();     // Adiciona propriedades específicas do modelo
+        Entity::drawUI();
+
+
+        
+        ImGui::Separator();
+        material.drawUI();
     }
+
+    // Atualiza a textura difusa
+    void setDiffuseTexture(std::shared_ptr<Texture> tex) {
+        material.setDiffuseTexture(tex);
+    }
+
+    // Atualiza a textura especular
+    void setSpecularTexture(std::shared_ptr<Texture> tex) {
+        material.setSpecularTexture(tex);
+    }
+
 };
-
-
-
-
